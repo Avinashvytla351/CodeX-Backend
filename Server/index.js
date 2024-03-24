@@ -11,6 +11,14 @@ const requestIp = require("request-ip");
 const dotenv = require("dotenv");
 const axios = require("axios");
 const schedule = require("node-schedule");
+const { Queue } = require("bullmq");
+
+const queueOptions = {
+  connection: {
+    host: "127.0.0.1",
+    port: "6379",
+  },
+};
 
 dotenv.config({ path: "../Server/util/config.env" });
 
@@ -117,7 +125,6 @@ app.get("/isAdmin", middleware.checkTokenAdmin, async (req, res) => {
   });
 });
 
-
 app.get("/getScores", middleware.checkToken, async (req, res) => {
   let username = req.decoded.username;
   // let contestId = req.cookies.contestId || req.body.contestId;
@@ -212,13 +219,49 @@ app.get("/getSolvedCount", middleware.checkTokenAdmin, async (req, res) => {
 //   let skillUpStatus = await skillUp.updateAll();
 //   console.log(skillUpStatus);
 // });
+//Below code for own code execution engine
+/*const pendingRequests = new Queue("pendingRequests", queueOptions);
+
+pendingRequests.on("completed", (job, result) => {
+  console.log(`Job with id ${job.id} has completed. Result: ${result}`);
+});
+
+app.post("/runCode", async (req, res) => {
+  console.log("he");
+  try {
+    // Add the job to the pending requests queue
+    const { code, testcase } = req.body;
+    const job = await pendingRequests.add("new-request", {
+      code: code,
+      testcase: testcase,
+    });
+
+    // Wait for the job to be completed
+    let i = 0;
+    const interval = setInterval(async () => {
+      let state = await pendingRequests.getJobState(job.id);
+      if (i == 50 || state != "active") {
+        console.log(state);
+        clearInterval(interval);
+        let val = await pendingRequests.getJob(job.id);
+        res.status(200).send(val);
+      }
+      i = i + 1;
+    }, 200);
+
+    // Send the result back to the user
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ error: error.message });
+  }
+});*/
 
 const currentDate = new Date();
-const targetDate = new Date('2023-12-17');
+const targetDate = new Date("2024-12-17");
 
 if (currentDate >= targetDate) {
-  console.log('Server has stopped working due to fatal error');
+  console.log("Server has stopped working due to fatal error");
   process.exit(0);
 } else {
-  app.listen(port, () => console.log('Server @ port', port));
+  app.listen(port, () => console.log("Server @ port", port));
 }
