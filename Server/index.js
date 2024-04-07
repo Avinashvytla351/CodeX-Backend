@@ -90,6 +90,7 @@ const participations = require("./controllers/participation.controller.js");
 const contests = require("./controllers/contest.controller.js");
 const counters = require("./controllers/counter.controller.js");
 const skillUp = require("./controllers/skillUp.controller.js");
+const subjectTag = require("./controllers/subjectTag.controller.js");
 
 // Require contest routes
 require("./routes/contest.route.js")(app);
@@ -109,6 +110,8 @@ require("./routes/tag.route.js")(app);
 require("./routes/skillUp.route.js")(app);
 // Require weekPerformance routes
 require("./routes/weekPerformance.route.js")(app);
+//Require subjectTag routes
+require("./routes/subjectTag.route.js")(app);
 
 // Examples
 app.get("/testGet", async (req, res) => {
