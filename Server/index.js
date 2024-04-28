@@ -91,6 +91,9 @@ const contests = require("./controllers/contest.controller.js");
 const counters = require("./controllers/counter.controller.js");
 const skillUp = require("./controllers/skillUp.controller.js");
 const subjectTag = require("./controllers/subjectTag.controller.js");
+const chapterTag = require("./controllers/chapterTag.controller.js");
+const subject = require("./controllers/subject.controller.js");
+const chapter = require("./controllers/chapter.controller.js");
 
 // Require contest routes
 require("./routes/contest.route.js")(app);
@@ -112,9 +115,15 @@ require("./routes/skillUp.route.js")(app);
 require("./routes/weekPerformance.route.js")(app);
 //Require subjectTag routes
 require("./routes/subjectTag.route.js")(app);
+//Require chapterTag routes
+require("./routes/chapterTag.route.js")(app);
+//Require subject routes
+require("./routes/subject.route.js")(app);
+//Require chapter routes
+require("./routes/chapter.route.js")(app);
 
 // Examples
-app.get("/testGet", async (req, res) => {
+app.get("/", async (req, res) => {
   res.json({ status: "working" });
 });
 

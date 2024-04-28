@@ -4,23 +4,21 @@ const { v4: uuidv4 } = require("uuid");
 
 var Schema = mongoose.Schema;
 
-var subjectSchema = new Schema({
-  subjectId: {
+var chapterSchema = new Schema({
+  chapterId: {
     type: String,
     required: true,
     default: uuidv4,
   },
+  chapterName: String,
+  chapterTagId: String,
+  subjectId: String,
   subjectName: String,
-  subjectTagId: String,
-  subjectTagName: String,
-  chaptersCount: {
-    type: Number,
-    default: 0,
-  },
+  chapterTagName: String,
   questionsCount: {
     type: Number,
     default: 0,
   },
 });
 
-module.exports = mongoose.model("Contest", subjectSchema);
+module.exports = mongoose.model("Chapter", chapterSchema);

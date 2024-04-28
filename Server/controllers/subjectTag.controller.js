@@ -100,9 +100,19 @@ exports.getAllSubjectTag = async (req, res) => {
 //Update one subject tag based on the subject tag Id
 exports.updateSubjectTag = async (req, res) => {
   try {
+    let name = "";
+    let split = req.body.subjectTagName.split(" ");
+    split.forEach((item, index) => {
+      if (item.length > 0 && item[0] != " ") {
+        name += item.charAt(0).toUpperCase() + item.slice(1);
+      }
+      if (index != split.length - 1) {
+        name += " ";
+      }
+    });
     const subjectTag = await subjectTagUtil.updateSubjectTag(
       req.params.subjectTagId,
-      req.body.subjectTagName
+      name
     );
 
     return responseUtil.sendResponse(
@@ -129,7 +139,6 @@ exports.deleteSubjectTag = async (req, res) => {
     const subjectTag = await subjectTagUtil.deleteSubjectTag(
       req.params.subjectTagId
     );
-    console.log(req.params.subjectTagId);
     return responseUtil.sendResponse(
       res,
       true,
