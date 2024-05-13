@@ -16,14 +16,14 @@ let checkToken = (req, res, next) => {
 
     jwt.verify(token, process.env.secret, (err, decoded) => {
       if (err) {
-        return res.json({
+        return res.status(400).json({
           success: false,
           message: "Token is not valid",
         });
       } else {
         if (decoded.isVerified || decoded.admin) {
           req.decoded = decoded;
-          if(decoded.admin) {
+          if (decoded.admin) {
             req.isAdmin = true;
           }
           next();
@@ -36,7 +36,7 @@ let checkToken = (req, res, next) => {
       }
     });
   } else {
-    return res.json({
+    return res.status(401).json({
       success: false,
       message: "Unauthorized Access",
     });
@@ -59,7 +59,7 @@ let checkTokenAdmin = (req, res, next) => {
 
     jwt.verify(token, process.env.secret, (err, decoded) => {
       if (err) {
-        return res.json({
+        return res.status(400).json({
           success: false,
           message: "Token is not valid",
         });
@@ -69,7 +69,7 @@ let checkTokenAdmin = (req, res, next) => {
           req.decoded = decoded;
           next();
         } else {
-          return res.json({
+          return res.status(401).json({
             success: false,
             message: "Unauthorized Access",
           });
@@ -77,7 +77,7 @@ let checkTokenAdmin = (req, res, next) => {
       }
     });
   } else {
-    return res.json({
+    return res.status(401).json({
       success: false,
       message: "Unauthorized Access",
     });
