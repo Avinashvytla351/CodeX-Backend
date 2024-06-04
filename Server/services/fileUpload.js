@@ -18,12 +18,10 @@ const saveFile = async (fileData, fileName) => {
 
     // Write the file data to the specified path
     fs.writeFileSync(savePath, data);
-
-    console.log("File saved successfully");
-    return true;
+    return newName;
   } catch (error) {
     console.error("Error saving file:", error.message);
-    return false;
+    throw new Error("Failed to save the file");
   }
 };
 

@@ -10,6 +10,9 @@ const participationUtil = require("../services/participationUtil.js");
 const contestUtil = require("../services/contestUtil.js");
 const responseUtil = require("../services/responseUtil.js");
 const fileUpload = require("../services/fileUpload.js");
+const judgeUtil = require("../services/judgeUtil.js");
+const path = require("path");
+const fs = require("fs");
 
 const dotenv = require("dotenv");
 dotenv.config({ path: "../util/config.env" });
@@ -20,6 +23,31 @@ var mcqCode = process.env.mcqCode;
 
 // const Base64 = require('js-base64').Base64;
 // Create and Save a new question
+function cleanRequestBody(reqBody) {
+  // Helper function to remove extra quotes from a string
+  function removeQuotes(value) {
+    if (typeof value === "string") {
+      return value.replace(/^"|"$/g, "");
+    }
+    return value;
+  }
+
+  // Remove quotes from all fields
+  for (let key in reqBody) {
+    if (reqBody.hasOwnProperty(key)) {
+      reqBody[key] = removeQuotes(reqBody[key]);
+    }
+  }
+
+  // Parse specific fields into arrays
+  reqBody.topic = JSON.parse(reqBody.topic);
+  reqBody.company = JSON.parse(reqBody.company);
+  reqBody.exampleTestCase = JSON.parse(reqBody.exampleTestCase);
+  reqBody.hiddenTestCase = JSON.parse(reqBody.hiddenTestCase);
+
+  return reqBody;
+}
+
 exports.create = async (req, res) => {
   // Validate request
   if (req.body.questionName === undefined) {
@@ -40,6 +68,7 @@ exports.create = async (req, res) => {
     }
   });
   try {
+    req.body = cleanRequestBody(req.body);
     const checkQuestion = await questionUtil.getOneQuestion({
       questionName: name,
     });
@@ -53,63 +82,108 @@ exports.create = async (req, res) => {
       );
     } else {
       const newId = uuidv4();
-      const question = new Question({
-        questionId: newId,
-        questionName: name,
-        questionDescriptionText: req.body.questionDescriptionText,
-        questionInputText: req.body.questionInputText,
-        questionOutputText: req.body.questionOutputText,
-        questionExampleTestcase: req.body.exampleTestCase,
-        questionHiddenTestcase: req.body.hiddenTestCase,
-        questionExplanation: req.body.explaination,
-        author: req.body.author,
-        difficulty: req.body.difficulty,
-        company: req.body.company,
-        topic: req.body.topic,
-        image: "",
-        subjectName: "",
-        subjectId: req.body.subject,
-        chapterName: "",
-        chapterId: req.body.chapter,
-        code: req.body.code,
-        codeLanguange: req.body.codeLanguage,
-        //mcq attributes
-        isMcq: req.body.isMcq ? req.body.isMcq : false,
-        options: req.body.isMcq ? req.body.options : [],
-        correctOption: req.body.isMcq ? req.body.correctOption : "",
-      });
-      // Save Question in the database
-      const newQuestion = await question.save();
+      var imageFileName = "";
+
       if (req.files.image) {
-        const result = await fileUpload.saveFile(req.files.image, newId);
-        if (result) {
+        try {
+          imageFileName = await fileUpload.saveFile(req.files.image, newId);
+
+          try {
+            const ans = await judgeUtil.sendRequestsToJudge(
+              req.body.hiddenTestCase,
+              {
+                isCheck: true,
+                sourceCode: req.body.code,
+                codeLanguage: req.body.codeLanguage,
+              }
+            );
+
+            const question = new Question({
+              questionId: newId,
+              questionName: name,
+              questionDescriptionText: req.body.questionDescriptionText,
+              questionInputText: req.body.questionInputText,
+              questionOutputText: req.body.questionOutputText,
+              questionExampleTestcase: req.body.exampleTestCase,
+              questionHiddenTestcase: req.body.hiddenTestCase,
+              questionExplanation: req.body.explaination,
+              author: req.body.author,
+              difficulty: req.body.difficulty,
+              company: req.body.company,
+              topic: req.body.topic,
+              image: imageFileName,
+              subjectName: req.body.subjectName,
+              subjectId: req.body.subject,
+              chapterName: req.body.chapterName,
+              chapterId: req.body.chapter,
+              code: req.body.code,
+              codeLanguange: req.body.codeLanguage,
+              validated: req.body.isMcq || ans,
+              //mcq attributes
+              isMcq: req.body.isMcq ? req.body.isMcq : false,
+              options: req.body.isMcq ? req.body.options : [],
+              correctOption: req.body.isMcq ? req.body.correctOption : "",
+            });
+            // Save Question in the database
+
+            const newQuestion = await question.save();
+
+            if (ans) {
+              return responseUtil.sendResponse(
+                res,
+                true,
+                newQuestion,
+                "Question created and validated successfully",
+                201
+              );
+            } else {
+              return responseUtil.sendResponse(
+                res,
+                false,
+                null,
+                "Question created successfully (Invalid Testcases)",
+                400
+              );
+            }
+          } catch (err) {
+            return responseUtil.sendResponse(
+              res,
+              false,
+              null,
+              "Failed to create and validate question due to server error",
+              500
+            );
+          }
+        } catch (err) {
           return responseUtil.sendResponse(
             res,
             false,
             null,
-            "Some error occurred while saving image to db",
+            "Failed to save the image",
             500
           );
-        } else {
-          return responseUtil.sendResponse(
-            res,
-            true,
-            newQuestion,
-            "Question(s) created successfully",
-            201
-          );
         }
-      } else {
-        return responseUtil.sendResponse(
-          res,
-          true,
-          newQuestion,
-          "Question(s) created successfully",
-          201
-        );
       }
     }
   } catch (error) {
+    //delete the image if the question saving has failed
+    if (imageFileName) {
+      try {
+        const filePath = path.join(__dirname, "../uploads/", imageFileName);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      } catch (err) {
+        return responseUtil.sendResponse(
+          res,
+          false,
+          null,
+          "Some error occurred while saving question to db",
+          500
+        );
+      }
+    }
+    console.log(error);
     return responseUtil.sendResponse(
       res,
       false,
